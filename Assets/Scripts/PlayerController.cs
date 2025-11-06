@@ -1,123 +1,160 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System.Collections;
 
 [RequireComponent(typeof(Rigidbody))]
-[RequireComponent(typeof(PlayerInput))]
 public class PlayerController : MonoBehaviour
 {
-    [Header("Mouvement")]
-    public float acceleration = 10f;
-    public float turnSpeed = 100f;
-    public float maxSpeed = 10f;
-
-    [Header("Saut et planement")]
-    public float jumpForce = 7f;
-    public float dragSpeed = -2f;
-    public float groundCheckDistance = 1.1f;
-    public LayerMask groundLayer;
-    public float holdThreshold = 0.4f;   // temps de maintien avant planement
-
-    private Rigidbody rb;
-    private Vector2 moveInput;
-    private bool jumpPressed;
-    private bool jumpHeld;
-    private bool isGrounded;
-
-    private PlayerInput playerInput;
+    [Header("Références Input System")]
+    public PlayerInput playerInput;
     private InputAction moveAction;
     private InputAction jumpAction;
-    private Coroutine holdCoroutine;
 
-    void OnEnable()
+    [Header("Mouvements")]
+    [SerializeField] private float moveSpeed = 6f;
+    [SerializeField] private float rotationSpeed = 120f;
+    [SerializeField] private float airControl = 0.6f;
+    [SerializeField] private float velocitySmoothing = 0.04f;
+
+    [Header("Saut et Gravité")]
+    [SerializeField] private float jumpVelocity = 6.5f;
+    [SerializeField] private float fallMultiplier = 2.6f;
+
+    [Header("Glide")]
+    [SerializeField] private bool enableGlide = true;
+    [SerializeField] private float glideVerticalTarget = -0.3f;
+    [SerializeField] private float glideActivationThreshold = -0.15f;
+
+    [Header("Ground Check")]
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private float groundCheckRadius = 0.25f;
+    [SerializeField] private LayerMask groundMask;
+
+    [Header("Wheel Rotation")]
+    public Transform[] leftWheels, rightWheels;     // Assign les 4 roues dans l’inspector
+    public float wheelRotationSpeed = 360f; // degrés par seconde selon vitesse
+
+
+    private Rigidbody rb;
+    private bool isGrounded;
+    private bool jumpRequested = false;
+    private bool jumpHeld;
+    private Vector3 currentVelocity;
+
+    private void Awake()
     {
-        playerInput = GetComponent<PlayerInput>();
         rb = GetComponent<Rigidbody>();
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
 
         moveAction = playerInput.actions["Move"];
         jumpAction = playerInput.actions["Jump"];
 
-        if (jumpAction != null)
+        jumpAction.started += ctx => jumpHeld = true;
+        jumpAction.canceled += ctx => jumpHeld = false;
+    }
+
+    private void Update()
+    {
+        float rotation = moveAction.ReadValue<Vector2>().x;
+        if (Mathf.Abs(rotation) > 0.1f)
         {
-            jumpAction.started += OnJumpStarted;
-            jumpAction.canceled += OnJumpCanceled;
+            float turn = rotation * rotationSpeed * Time.deltaTime;
+            rb.MoveRotation(Quaternion.Euler(0f, transform.eulerAngles.y + turn, 0f));
+        }
+
+        //nécéssaire parce que le jump se lit pas dans le fixed update parfois sinon
+        if (jumpAction.triggered)
+            jumpRequested = true;
+    }
+
+    private void FixedUpdate()
+    {
+        CheckGround();
+        HandleMovement();
+        HandleJump();
+        HandleGlide();
+        ApplyFallMultiplier();
+    }
+
+    private void HandleMovement()
+    {
+        float inputForward = moveAction.ReadValue<Vector2>().y;
+        float control = isGrounded ? 1f : airControl;
+
+        Vector3 desiredVelocity = transform.forward * (inputForward * moveSpeed);
+        Vector3 currentVel = rb.linearVelocity;
+        Vector3 targetVel = new Vector3(desiredVelocity.x, currentVel.y, desiredVelocity.z);
+
+        if (velocitySmoothing > 0f)
+        {
+            Vector3 smoothVel = Vector3.SmoothDamp(currentVel, targetVel, ref currentVelocity, velocitySmoothing);
+            rb.linearVelocity = new Vector3(smoothVel.x, currentVel.y, smoothVel.z);
+        }
+        else
+        {
+            rb.linearVelocity = targetVel;
+        }
+
+        //animation des roues
+        float forwardSpeed = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
+
+        foreach (Transform wheel in leftWheels)
+        {
+            if (wheel == null) continue;
+            // Roulement vers l'avant → axe local X
+            wheel.Rotate(Vector3.down * forwardSpeed * wheelRotationSpeed * Time.deltaTime, Space.Self);
+        }
+        foreach (Transform wheel in rightWheels)
+        {
+            if (wheel == null) continue;
+            // Roulement vers l'avant → axe local X
+            wheel.Rotate(Vector3.up * forwardSpeed * wheelRotationSpeed * Time.deltaTime, Space.Self);
+        }
+
+    }
+
+    private void HandleJump()
+    {
+        if (jumpRequested && isGrounded)
+        {
+            Vector3 v = rb.linearVelocity;
+            v.y = jumpVelocity;
+            rb.linearVelocity = v;
+        }
+
+        jumpRequested = false; // On consomme l'input ici
+    }
+
+    private void HandleGlide()
+    {
+        if (!enableGlide) return;
+        if (isGrounded) return;
+        if (!jumpHeld) return;
+        if (rb.linearVelocity.y > glideActivationThreshold) return;
+
+        Vector3 v = rb.linearVelocity;
+        v.y = Mathf.Lerp(v.y, glideVerticalTarget, 0.5f);
+        rb.linearVelocity = v;
+    }
+
+    private void ApplyFallMultiplier()
+    {
+        if (rb.linearVelocity.y < 0f)
+        {
+            rb.AddForce(Vector3.up * (Physics.gravity.y * (fallMultiplier - 1f)), ForceMode.Acceleration);
         }
     }
 
-    void OnDisable()
+    private void CheckGround()
     {
-        if (jumpAction != null)
-        {
-            jumpAction.started -= OnJumpStarted;
-            jumpAction.canceled -= OnJumpCanceled;
-        }
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask);
     }
 
-    void FixedUpdate()
+    private void OnDrawGizmosSelected()
     {
-        isGrounded = Physics.Raycast(transform.position, Vector3.down, groundCheckDistance, groundLayer);
-
-        // --- D�placement ---
-        moveInput = moveAction.ReadValue<Vector2>();
-        Vector3 move = transform.forward * moveInput.y * acceleration;
-
-        if (new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude < maxSpeed)
-            rb.AddForce(move, ForceMode.Acceleration);
-
-        transform.Rotate(Vector3.up, moveInput.x * turnSpeed * Time.fixedDeltaTime);
-
-        // --- Saut ---
-        if (jumpPressed && isGrounded)
+        if (groundCheck != null)
         {
-            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
-            jumpPressed = false;
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
         }
-
-        // --- Planement ---
-        if (!isGrounded && jumpHeld && rb.linearVelocity.y < dragSpeed)
-        {
-            Vector3 vel = rb.linearVelocity;
-            vel.y = Mathf.Lerp(vel.y, dragSpeed, 0.1f);
-            rb.linearVelocity = vel;
-        }
-    }
-
-    // --- Gestion des inputs de saut ---
-    private void OnJumpStarted(InputAction.CallbackContext ctx)
-    {
-        if (isGrounded)
-            jumpPressed = true;
-
-        if (holdCoroutine != null)
-            StopCoroutine(holdCoroutine);
-
-        holdCoroutine = StartCoroutine(HoldDelayCoroutine());
-    }
-
-    private void OnJumpCanceled(InputAction.CallbackContext ctx)
-    {
-        jumpHeld = false;
-        jumpPressed = false;
-
-        if (holdCoroutine != null)
-        {
-            StopCoroutine(holdCoroutine);
-            holdCoroutine = null;
-        }
-    }
-
-    private IEnumerator HoldDelayCoroutine()
-    {
-        float t = 0f;
-        while (t < holdThreshold)
-        {
-            if (!jumpAction.IsPressed()) yield break;
-            t += Time.unscaledDeltaTime;
-            yield return null;
-        }
-
-        jumpHeld = true;
-        holdCoroutine = null;
     }
 }
