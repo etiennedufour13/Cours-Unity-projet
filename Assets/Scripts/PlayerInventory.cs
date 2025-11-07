@@ -20,6 +20,6 @@ public class PlayerInventory : MonoBehaviour
     private void UpdateUI()
     {
         if (coinText != null)
-            coinText.text = "Coins : " + coinCount.ToString();
+            coinText.text = coinCount.ToString() + " / 12";
     }
 }

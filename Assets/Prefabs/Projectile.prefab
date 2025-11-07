@@ -4909,6 +4909,8 @@ MonoBehaviour:
   stopProjectile:
     serializedVersion: 2
     m_Bits: 8
+  impact: {fileID: 8300000, guid: 31548cd11a88df8439d029633935967d, type: 3}
+  enemyHurt: {fileID: 8300000, guid: df9beb545af2b2045886835cf4017b39, type: 3}
 --- !u!1 &7771581177753918958
 GameObject:
   m_ObjectHideFlags: 0

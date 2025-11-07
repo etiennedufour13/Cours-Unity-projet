@@ -5,7 +5,7 @@ public class PlayerHealth : MonoBehaviour
 {
     [Header("Health Settings")]
     public int maxHealth = 3;
-    public Image[] hearts; // assigner les 3 icônes dans l’ordre
+    public Image[] hearts;
 
     private int currentHealth;
 
@@ -23,8 +23,7 @@ public class PlayerHealth : MonoBehaviour
 
         if (currentHealth <= 0)
         {
-            // ici tu pourras ajouter une logique de mort / respawn
-            Debug.Log("Player is dead");
+            Debug.Log("Player is dead"); //a faire
         }
     }
 

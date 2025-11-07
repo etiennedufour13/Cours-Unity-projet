@@ -1,21 +1,26 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 [RequireComponent(typeof(Collider))]
 public class EnemyProjectile : MonoBehaviour
 {
-    [Header("Projectile Settings")]
     public float speed = 15f;
     public float lifetime = 5f;
     public int damage = 1;
     public LayerMask stopProjectile;
     public GameObject explosion;
 
+    public AudioClip impact, playerHurt;
+    private AudioSource audioSource;
+
     private Vector3 direction;
+
+
 
     void Start()
     {
-        // Trouve le joueur au moment du tir
         GameObject player = GameObject.FindGameObjectWithTag("Player");
+
         if (player)
         {
             direction = (player.transform.position - transform.position).normalized;
@@ -25,7 +30,8 @@ public class EnemyProjectile : MonoBehaviour
             direction = transform.forward;
         }
 
-        // Auto-destruction après quelques secondes
+        audioSource = GameObject.FindGameObjectWithTag("AudioEffects").GetComponent<AudioSource>();
+
         Destroy(gameObject, lifetime);
     }
 
@@ -37,17 +43,21 @@ public class EnemyProjectile : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         Debug.Log("hit");
-        // Si le projectile touche un layer "solide" -> destruction
+
+        //si sol/mur
         if ((stopProjectile.value & (1 << other.transform.gameObject.layer)) > 0)
         {
+            audioSource.PlayOneShot(impact, 1F);
             GameObject explo = Instantiate(explosion, transform.position, transform.rotation);
             Destroy(explo, 1);
             Destroy(gameObject);
         }
 
-        // Si c’est le joueur, infliger des dégâts
+        //si player
         if (other.CompareTag("Player"))
         {
+            audioSource.PlayOneShot(playerHurt, 1F);
+
             Debug.Log("hit player");
             PlayerHealth ph = other.GetComponent<PlayerHealth>();
             if (ph != null)

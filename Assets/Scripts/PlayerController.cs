@@ -30,8 +30,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private LayerMask groundMask;
 
     [Header("Wheel Rotation")]
-    public Transform[] leftWheels, rightWheels;     // Assign les 4 roues dans l’inspector
-    public float wheelRotationSpeed = 360f; // degrés par seconde selon vitesse
+    public Transform[] leftWheels, rightWheels;
+    public float wheelRotationSpeed = 360f;
+
+    [Header("Son")]
+    public AudioSource moteurSon;
+    public float minPitch = 0.9f;
+    public float maxPitch = 1.8f;
+    public float minVolume = 0.1f;
+    public float maxVolume = 1f;
+    public float maxSpeedForAudio = 10f;
 
 
     private Rigidbody rb;
@@ -63,7 +71,6 @@ public class PlayerController : MonoBehaviour
             rb.MoveRotation(Quaternion.Euler(0f, transform.eulerAngles.y + turn, 0f));
         }
 
-        //nécéssaire parce que le jump se lit pas dans le fixed update parfois sinon
         if (jumpAction.triggered)
             jumpRequested = true;
     }
@@ -97,21 +104,23 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = targetVel;
         }
 
-        //animation des roues
         float forwardSpeed = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z).magnitude;
 
         foreach (Transform wheel in leftWheels)
         {
             if (wheel == null) continue;
-            // Roulement vers l'avant → axe local X
             wheel.Rotate(Vector3.down * forwardSpeed * wheelRotationSpeed * Time.deltaTime, Space.Self);
         }
         foreach (Transform wheel in rightWheels)
         {
             if (wheel == null) continue;
-            // Roulement vers l'avant → axe local X
             wheel.Rotate(Vector3.up * forwardSpeed * wheelRotationSpeed * Time.deltaTime, Space.Self);
         }
+
+        float normalizedSpeed = Mathf.Clamp01(forwardSpeed / maxSpeedForAudio);
+
+        moteurSon.volume = Mathf.Lerp(minVolume, maxVolume, normalizedSpeed);
+        moteurSon.pitch = Mathf.Lerp(minPitch, maxPitch, normalizedSpeed);
 
     }
 
@@ -124,7 +133,7 @@ public class PlayerController : MonoBehaviour
             rb.linearVelocity = v;
         }
 
-        jumpRequested = false; // On consomme l'input ici
+        jumpRequested = false;
     }
 
     private void HandleGlide()

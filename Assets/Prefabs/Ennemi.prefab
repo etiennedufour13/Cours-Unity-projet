@@ -143,6 +143,9 @@ GameObject:
   - component: {fileID: 5516536128871130899}
   - component: {fileID: 6116132898356394809}
   - component: {fileID: 6685802895563037370}
+  - component: {fileID: 3535177120596684365}
+  - component: {fileID: 9106477105321235194}
+  - component: {fileID: 1397550210275327525}
   m_Layer: 0
   m_Name: Ennemi
   m_TagString: Untagged
@@ -203,8 +206,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyRobotAI
   target: {fileID: 0}
-  engageDistance: 8
-  disengageDistance: 10
+  engageDistance: 10
+  disengageDistance: 13
   fireInterval: 2
   attackAnimatorBool: attackOn
   onFire:
@@ -216,6 +219,74 @@ MonoBehaviour:
   rotateHeadOnlyWhenAttacking: 1
   projectilePrefab: {fileID: 7986129919287456214, guid: ccfe54b690fecc9448c0a7c0e1c5ba27, type: 3}
   firePoint: {fileID: 2887653423492246689}
+  reveils:
+  - {fileID: 8300000, guid: e3e3052a6b5a75a439927793e31c4706, type: 3}
+  - {fileID: 8300000, guid: 79f25dbcb03dc8b4caf3c3be6c99636f, type: 3}
+  - {fileID: 8300000, guid: 45b52a978bafc4d499058cbd06c63247, type: 3}
+  shoot: {fileID: 8300000, guid: 31548cd11a88df8439d029633935967d, type: 3}
+--- !u!114 &3535177120596684365
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2890301481697473056}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dabe820e1a6902e4298a0deee8eca871, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyHealth
+  health: 5
+--- !u!136 &9106477105321235194
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2890301481697473056}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.8
+  m_Height: 3
+  m_Direction: 1
+  m_Center: {x: 0, y: 1.5, z: 0}
+--- !u!54 &1397550210275327525
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2890301481697473056}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &4641084902239616001
 GameObject:
   m_ObjectHideFlags: 0

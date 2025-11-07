@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public enum GameState
@@ -12,20 +14,23 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
-    [Header("Références principales")]
+    [Header("Références")]
     public Camera menuCamera;
     public Camera gameplayCamera;
     public Camera endCamera;
     public GameObject player;
     public GameObject uiMenu;
     public GameObject uiEnd;
-
-    [Header("Boutons UI")]
-    public Button playButton;
-    public Button quitButton;
+    public GameObject uiPause;
+    public PlayerInventory playerInventory;
+    public AudioSource moteurPlayer;
+    public PlayerInput playerInput;
+    private InputAction pauseKey;
 
     [Header("État du jeu actuel")]
     public GameState currentState = GameState.Menu;
+
+    private bool isPause;
 
     void Awake()
     {
@@ -37,19 +42,23 @@ public class GameManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        // Initialisation de base
-        SwitchState(GameState.Menu);
+        pauseKey = playerInput.actions["Pause"];
 
-        // Assignation des boutons
-        if (playButton != null) playButton.onClick.AddListener(StartGame);
-        if (quitButton != null) quitButton.onClick.AddListener(QuitGame);
+        SwitchState(GameState.Menu);
     }
 
     void Update()
     {
-        // Exemple de condition de fin de jeu (à adapter)
-        if (currentState == GameState.Gameplay && player.transform.position.y < -10f)
+        if (currentState == GameState.Gameplay && playerInventory.coinCount >= 12)
+        {
             SwitchState(GameState.End);
+            moteurPlayer.volume = 0; 
+        }
+
+        if (pauseKey.triggered)
+        {
+            PauseGame();
+        }
     }
 
     public void StartGame()
@@ -62,11 +71,34 @@ public class GameManager : MonoBehaviour
         Application.Quit();
     }
 
+    public void RestartGame()
+    {
+        SceneManager.LoadScene(0);
+    }
+
+    public void PauseGame()
+    {
+        isPause = !isPause;
+
+        if (isPause)
+        {
+            uiPause.SetActive(true);
+            Time.timeScale = 0;
+            Cursor.visible = true;
+        }
+        else
+        {
+            uiPause.SetActive(false);
+            Time.timeScale = 1;
+            Cursor.visible = false;
+
+        }
+    }
+
     public void SwitchState(GameState newState)
     {
         currentState = newState;
 
-        // Désactivation des caméras et UIs
         menuCamera.gameObject.SetActive(false);
         gameplayCamera.gameObject.SetActive(false);
         endCamera.gameObject.SetActive(false);
