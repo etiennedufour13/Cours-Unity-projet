@@ -54,6 +54,8 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (GameManager.Instance.currentState != GameState.Gameplay) return;
+
         float rotation = moveAction.ReadValue<Vector2>().x;
         if (Mathf.Abs(rotation) > 0.1f)
         {
@@ -68,6 +70,7 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (GameManager.Instance.currentState != GameState.Gameplay) return;
         CheckGround();
         HandleMovement();
         HandleJump();

@@ -9,6 +9,8 @@ public class PlayerShooting : MonoBehaviour
 
     void OnAttack(InputValue value)
     {
+        if (GameManager.Instance.currentState != GameState.Gameplay) return;
+
         if (value.isPressed)
         {
             GameObject projectile = Instantiate(projectilePrefab, shootPoint.position, shootPoint.rotation);

@@ -1,90 +1,52 @@
-// CameraHeadController.cs
-// Unity 6.2 - New Input System compatible
-// Attach this to an independent CameraRig GameObject (not the Camera itself).
-// Setup (in-inspector):
-// - playerBody: the Transform representing the lower body / root that moves/rotates with the wheels.
-// - headTransform: the Transform of the head mesh (child of player).
-// - cameraTransform: the actual Camera (child or separate) that will be positioned by this script.
-// - PlayerInput (optional) with an action named "Look" (Vector2). If absent, script falls back to Mouse.current.delta.
-// Notes:
-// - The script keeps the camera independent from body movement and allows the head to turn toward the camera aim.
-// - Tune sensitivities, limits and smooth times in the inspector for the desired gamefeel.
-
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class CameraHeadController : MonoBehaviour
 {
-    [Header("References")]
-    [Tooltip("Transform that represents the moving body (wheels).")]
+    [Header("Références")]
     public Transform playerBody;
-    [Tooltip("Transform of the head part (will rotate independently).")]
     public Transform headTransform;
-    [Tooltip("The Camera transform (the actual camera).")]
     public Transform cameraTransform;
-    [Tooltip("Optional PlayerInput containing a 'Look' action (Vector2). If null, Mouse.current.delta is used.")]
     public PlayerInput playerInput;
-    [Tooltip("Name of the look action inside the PlayerInput asset.")]
-    public string lookActionName = "Look";
 
-    [Header("Mouse / Look")]
-    public float lookSensitivity = 0.15f;      // multiplier applied to raw pointer delta
+    [Header("Paramètres regard")]
+    public float lookSensitivity = 0.15f;
     public bool invertY = false;
     public bool lockCursor = true;
 
-    [Header("Camera Offset")]
-    public Vector3 cameraOffset = new Vector3(0f, 0.6f, -3f); // local offset relative to head (z negative = behind)
-    public float positionSmoothTime = 0.08f;   // smaller = snappier
-    public float rotationSmoothTime = 0.06f;   // for camera LookAt smoothing
-    public float headLookHeight = 0.6f;        // vertical offset the camera looks at on the head
+    public float minPitch = -20f;
+    public float maxPitch = 45f;
 
-    [Header("Pitch Limits")]
-    public float minPitch = -20f; // look down
-    public float maxPitch = 45f;  // look up
-
-    [Header("Head constraints")]
-    public float headYawLimit = 70f;   // degrees left/right relative to body forward
-    public float headPitchLimit = 25f; // degrees up/down relative to neutral head
+    public float headYawLimit = 70f;
+    public float headPitchLimit = 25f;
     public float headSmoothTime = 0.12f;
 
-    [Header("Rotation Offset")]
     public float baseYawOffset = 0f;
 
+    [Header("Paramètre Camera")]
+    public Vector3 cameraOffset = new Vector3(0f, 0.6f, -3f);
+    public float positionSmoothTime = 0.08f; 
+    public float rotationSmoothTime = 0.06f; 
+    public float headLookHeight = 0.6f; 
 
-    // internals
+
     private InputAction lookAction;
     private Vector3 cameraVelocity = Vector3.zero;
     private float cameraRotVel;
-    private float yaw;   // world yaw that camera is facing
-    private float pitch; // camera pitch
+    private float yaw;
+    private float pitch;
     private Quaternion headInitialLocalRot;
-    private float headYawCurrent;   // smoothed head yaw offset (deg)
-    private float headPitchCurrent; // smoothed head pitch offset (deg)
+    private float headYawCurrent;
+    private float headPitchCurrent;
     private float headYawVel;
     private float headPitchVel;
 
     void Awake()
     {
-        if (playerInput != null)
-        {
-            if (playerInput.actions != null && playerInput.actions.FindAction(lookActionName) != null)
-                lookAction = playerInput.actions[lookActionName];
-            else
-                lookAction = null;
-        }
-
-        if (cameraTransform == null && Camera.main != null)
-            cameraTransform = Camera.main.transform;
-
-        if (headTransform == null)
-            Debug.LogWarning("CameraHeadController: headTransform not assigned.");
-
-        if (playerBody == null)
-            Debug.LogWarning("CameraHeadController: playerBody not assigned.");
-
         headInitialLocalRot = headTransform != null ? headTransform.localRotation : Quaternion.identity;
 
-        // Initialize yaw/pitch from current camera orientation so the first frame doesn't snap
+        if (GameManager.Instance.currentState != GameState.Gameplay) return;
+
         Vector3 e = transform.eulerAngles;
         yaw = e.y;
         pitch = cameraTransform != null ? cameraTransform.eulerAngles.x : 0f;
@@ -110,6 +72,8 @@ public class CameraHeadController : MonoBehaviour
 
     void Update()
     {
+        if (GameManager.Instance.currentState != GameState.Gameplay) return;
+
         // Read look input (delta)
         Vector2 rawDelta = Vector2.zero;
         if (lookAction != null)

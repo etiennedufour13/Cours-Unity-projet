@@ -7,7 +7,8 @@ public class EnemyProjectile : MonoBehaviour
     public float speed = 15f;
     public float lifetime = 5f;
     public int damage = 1;
-    public LayerMask destroyLayers;
+    public LayerMask stopProjectile;
+    public GameObject explosion;
 
     private Vector3 direction;
 
@@ -35,21 +36,26 @@ public class EnemyProjectile : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log("hit");
         // Si le projectile touche un layer "solide" -> destruction
-        if (((1 << other.gameObject.layer) & destroyLayers) != 0)
+        if ((stopProjectile.value & (1 << other.transform.gameObject.layer)) > 0)
         {
+            GameObject explo = Instantiate(explosion, transform.position, transform.rotation);
+            Destroy(explo, 1);
             Destroy(gameObject);
-            return;
         }
 
         // Si c’est le joueur, infliger des dégâts
         if (other.CompareTag("Player"))
         {
+            Debug.Log("hit player");
             PlayerHealth ph = other.GetComponent<PlayerHealth>();
             if (ph != null)
             {
                 ph.TakeDamage(damage);
             }
+            GameObject explo = Instantiate(explosion, transform.position, transform.rotation);
+            Destroy(explo, 1);
             Destroy(gameObject);
         }
     }
