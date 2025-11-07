@@ -34,6 +34,10 @@ public class EnemyRobotAI : MonoBehaviour
     [Tooltip("If true, the head will only rotate while in attack mode; otherwise it rotates continuously.")]
     public bool rotateHeadOnlyWhenAttacking = true;
 
+    [Header("Projectile System")]
+    public GameObject projectilePrefab;
+    public Transform firePoint;
+
     // internals
     private Animator animator;
     private float fireTimer = 0f;
@@ -118,8 +122,9 @@ public class EnemyRobotAI : MonoBehaviour
 
     private void Fire()
     {
-        // Placeholder: actual projectile spawning or effect should be hooked to onFire via inspector
-        onFire?.Invoke();
+        if (projectilePrefab == null || firePoint == null) return;
+
+        Instantiate(projectilePrefab, firePoint.position, firePoint.rotation);
     }
 
     private void RotateHeadTowardsTarget()
